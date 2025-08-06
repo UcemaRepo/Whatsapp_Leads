@@ -26,7 +26,9 @@ def extraer_datos(texto, telefono):
     prompt = f"""Extraé del siguiente mensaje los datos de la persona (si están): nombre, apellido, carrera de interés y si ya fue contactado o no. Elegí la carrera solo de esta lista: {", ".join(CARRERAS_DISPONIBLES)}. Respondé en formato JSON con las claves: nombre, apellido, carrera, estado_contacto.
 
 Mensaje:
-"{texto}""""
+{texto}
+"""
+
 
     completion = client.chat.completions.create(
         model="gpt-4o",
