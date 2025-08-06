@@ -6,8 +6,9 @@ from datetime import datetime
 from openai import OpenAI
 from flask import send_file
 import io
-
+from flask_cors import CORS
 app = Flask(__name__)
+CORS(app)
 
 # Cargar API Key
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
