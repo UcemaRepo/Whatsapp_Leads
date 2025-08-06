@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Descargar datos</title>
+</head>
+<body>
+  <h2>Descargar datos recolectados</h2>
+  <button onclick="descargarJSON()">Descargar archivo JSON</button>
+
+  <script>
+    function descargarJSON() {
+      fetch('http://localhost:10000/descargar-json')
+        .then(response => response.json())
+        .then(data => {
+          const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'data.json';
+          a.click();
+          URL.revokeObjectURL(url);
+        })
+        .catch(error => alert("No se pudo descargar: " + error));
+    }
+  </script>
+</body>
+</html>
