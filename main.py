@@ -71,6 +71,10 @@ def guardar_datos_locales(nuevos_datos):
     except Exception as e:
         print(f"Error guardando archivo local: {e}")
 
+@app.route("/")
+def home():
+    return send_from_directory('.', 'index.html')
+
 
 @app.route("/procesar-mensaje", methods=["POST"])
 def procesar_mensaje():
