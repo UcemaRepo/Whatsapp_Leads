@@ -4,6 +4,8 @@ from flask import Flask, request, jsonify
 from flask import Flask, request, jsonify, send_from_directory
 from datetime import datetime
 from openai import OpenAI
+from flask import send_file
+import io
 
 app = Flask(__name__)
 
@@ -101,9 +103,14 @@ def descargar_json():
         return jsonify({"error": "No hay datos para descargar"}), 404
 
     with open(ARCHIVO_DATOS, "r", encoding="utf-8") as f:
-        datos = json.load(f)
+        data = f.read()
 
-    return jsonify(datos)
+    return send_file(
+        io.BytesIO(data.encode('utf-8')),
+        mimetype='application/json',
+        as_attachment=True,
+        download_name='datos.json'
+    )
 
 
 if __name__ == "__main__":
