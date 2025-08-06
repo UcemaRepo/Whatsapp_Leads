@@ -1,4 +1,5 @@
 import os
+import json
 import requests
 from flask import Flask, request, jsonify
 from datetime import datetime
@@ -13,7 +14,7 @@ GAS_WEBHOOK_URL = os.getenv("GAS_WEBHOOK_URL")  # Google Apps Script Web App URL
 # Inicializar cliente de OpenAI
 client = OpenAI(api_key=OPENAI_API_KEY)
 
-# Lista de carreras válidas para matchear
+# Lista de carreras válidas
 CARRERAS_DISPONIBLES = [
     "Ingeniería en Informática", "Abogacía", "Economía", "Marketing",
     "Administración de Empresas", "Ciencias Políticas", "Finanzas",
@@ -23,29 +24,29 @@ CARRERAS_DISPONIBLES = [
 ]
 
 def extraer_datos(texto, telefono):
-prompt = f"""Extraé del siguiente mensaje los datos de la persona (si están): nombre, apellido, carrera de interés y si ya fue contactado o no. Elegí la carrera solo de esta lista: {", ".join(CARRERAS_DISPONIBLES)}. Respondé en formato JSON con las claves: nombre, apellido, carrera, estado_contacto.
+    prompt = f"""Extraé del siguiente mensaje los datos de la persona (si están): nombre, apellido, carrera de interés y si ya fue contactado o no. Elegí la carrera solo de esta lista: {", ".join(CARRERAS_DISPONIBLES)}. Respondé en formato JSON con las claves: nombre, apellido, carrera, estado_contacto.
 
 Mensaje:
 '{texto}'"""
 
-
-
-    completion = client.chat.completions.create(
-        model="gpt-4o",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.2
-    )
-
     try:
-        contenido = completion.choices[0].message.content
-        datos = eval(contenido)  # usar json.loads si el modelo devuelve JSON real
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "Sos un asistente que extrae datos para carga de formularios."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        contenido = response.choices[0].message.content
+        resultado = json.loads(contenido)
+        resultado["telefono"] = telefono
+        resultado["timestamp"] = datetime.now().isoformat()
+        resultado["ultimo_mensaje"] = texto
+        return resultado
     except Exception as e:
-        datos = {}
+        print(f"Error procesando el mensaje: {e}")
+        return None
 
-    datos["telefono"] = telefono
-    datos["ultimo_mensaje"] = texto
-    datos["timestamp"] = datetime.now().isoformat()
-    return datos
 
 @app.route("/procesar-mensaje", methods=["POST"])
 def procesar_mensaje():
@@ -57,6 +58,8 @@ def procesar_mensaje():
         return jsonify({"error": "Faltan datos"}), 400
 
     datos = extraer_datos(mensaje, telefono)
+    if not datos:
+        return jsonify({"error": "No se pudieron extraer datos"}), 500
 
     # Enviar a Google Sheets
     try:
@@ -65,3 +68,4 @@ def procesar_mensaje():
         return jsonify({"error": "Error enviando a Google Sheets", "detalle": str(e)}), 500
 
     return jsonify({"status": "ok", "datos": datos})
+
