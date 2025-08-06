@@ -38,10 +38,18 @@ Mensaje:
             ]
         )
         contenido = response.choices[0].message.content
-        resultado = json.loads(contenido)
-        resultado["telefono"] = telefono
-        resultado["timestamp"] = datetime.now().isoformat()
-        resultado["ultimo_mensaje"] = texto
+        datos_extraidos = json.loads(contenido)
+
+        # Mapear a claves que espera Google Sheets
+        resultado = {
+            "Teléfono": telefono,
+            "Nombre": datos_extraidos.get("nombre", ""),
+            "Apellido": datos_extraidos.get("apellido", ""),
+            "Carrera": datos_extraidos.get("carrera", ""),
+            "Estado_Contacto": datos_extraidos.get("estado_contacto", ""),
+            "Último mensaje": texto,
+            "Timestamp": datetime.now().isoformat()
+        }
         return resultado
     except Exception as e:
         print(f"Error procesando el mensaje: {e}")
@@ -63,7 +71,8 @@ def procesar_mensaje():
 
     # Enviar a Google Sheets
     try:
-        requests.post(GAS_WEBHOOK_URL, json=datos)
+        response = requests.post(GAS_WEBHOOK_URL, json=datos)
+        print(f"Enviado a Sheets. Status: {response.status_code}, Response: {response.text}")
     except Exception as e:
         return jsonify({"error": "Error enviando a Google Sheets", "detalle": str(e)}), 500
 
