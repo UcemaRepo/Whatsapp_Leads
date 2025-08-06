@@ -10,7 +10,7 @@
 
   <script>
     function descargarJSON() {
-      fetch('http://localhost:10000/descargar-json')
+      fetch('https://whatsapp-leads.onrender.com/descargar-json')
         .then(response => response.json())
         .then(data => {
           const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
