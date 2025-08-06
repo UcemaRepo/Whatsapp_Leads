@@ -1,20 +1,17 @@
 import os
 import json
-import requests
 from flask import Flask, request, jsonify
 from datetime import datetime
 from openai import OpenAI
 
 app = Flask(__name__)
 
-# Cargar variables de entorno
+# Cargar API Key
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-GAS_WEBHOOK_URL = os.getenv("GAS_WEBHOOK_URL")  # Google Apps Script Web App URL
 
 # Inicializar cliente de OpenAI
 client = OpenAI(api_key=OPENAI_API_KEY)
 
-# Lista de carreras válidas
 CARRERAS_DISPONIBLES = [
     "Ingeniería en Informática", "Abogacía", "Economía", "Marketing",
     "Administración de Empresas", "Ciencias Políticas", "Finanzas",
@@ -22,6 +19,8 @@ CARRERAS_DISPONIBLES = [
     "Economía Empresarial", "Analítica de Negocios", "Negocios Digitales", "Actuario",
     "Artes Liberales y Ciencias (BA)"
 ]
+
+ARCHIVO_DATOS = "data.json"
 
 def extraer_datos(texto, telefono):
     prompt = f"""Extraé del siguiente mensaje los datos de la persona (si están): nombre, apellido, carrera de interés y si ya fue contactado o no. Elegí la carrera solo de esta lista: {", ".join(CARRERAS_DISPONIBLES)}. Respondé en formato JSON con las claves: nombre, apellido, carrera, estado_contacto.
@@ -40,7 +39,6 @@ Mensaje:
         contenido = response.choices[0].message.content
         datos_extraidos = json.loads(contenido)
 
-        # Mapear a claves que espera Google Sheets
         resultado = {
             "telefono": telefono,
             "nombre": datos_extraidos.get("nombre", ""),
@@ -56,6 +54,24 @@ Mensaje:
         return None
 
 
+def guardar_datos_locales(nuevos_datos):
+    try:
+        # Si ya existe, cargarlos
+        if os.path.exists(ARCHIVO_DATOS):
+            with open(ARCHIVO_DATOS, "r", encoding="utf-8") as f:
+                datos_existentes = json.load(f)
+        else:
+            datos_existentes = []
+
+        datos_existentes.append(nuevos_datos)
+
+        # Guardar todo nuevamente
+        with open(ARCHIVO_DATOS, "w", encoding="utf-8") as f:
+            json.dump(datos_existentes, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        print(f"Error guardando archivo local: {e}")
+
+
 @app.route("/procesar-mensaje", methods=["POST"])
 def procesar_mensaje():
     data = request.get_json()
@@ -69,14 +85,21 @@ def procesar_mensaje():
     if not datos:
         return jsonify({"error": "No se pudieron extraer datos"}), 500
 
-    # Enviar a Google Sheets
-    try:
-        response = requests.post(GAS_WEBHOOK_URL, json=datos)
-        print(f"Enviado a Sheets. Status: {response.status_code}, Response: {response.text}")
-    except Exception as e:
-        return jsonify({"error": "Error enviando a Google Sheets", "detalle": str(e)}), 500
+    guardar_datos_locales(datos)
 
     return jsonify({"status": "ok", "datos": datos})
+
+
+@app.route("/descargar-json", methods=["GET"])
+def descargar_json():
+    if not os.path.exists(ARCHIVO_DATOS):
+        return jsonify({"error": "No hay datos para descargar"}), 404
+
+    with open(ARCHIVO_DATOS, "r", encoding="utf-8") as f:
+        datos = json.load(f)
+
+    return jsonify(datos)
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
