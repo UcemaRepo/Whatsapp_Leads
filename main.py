@@ -42,13 +42,13 @@ Mensaje:
 
         # Mapear a claves que espera Google Sheets
         resultado = {
-            "Teléfono": telefono,
-            "Nombre": datos_extraidos.get("nombre", ""),
-            "Apellido": datos_extraidos.get("apellido", ""),
-            "Carrera": datos_extraidos.get("carrera", ""),
-            "Estado_Contacto": datos_extraidos.get("estado_contacto", ""),
-            "Último mensaje": texto,
-            "Timestamp": datetime.now().isoformat()
+            "telefono": telefono,
+            "nombre": datos_extraidos.get("nombre", ""),
+            "apellido": datos_extraidos.get("apellido", ""),
+            "carrera": datos_extraidos.get("carrera", ""),
+            "estado_contacto": datos_extraidos.get("estado_contacto", ""),
+            "ultimo_mensaje": texto,
+            "timestamp": datetime.now().isoformat()
         }
         return resultado
     except Exception as e:
